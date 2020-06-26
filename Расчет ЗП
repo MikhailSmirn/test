@@ -1,0 +1,151 @@
+namespace Salary.Models
+{
+    //Базовый класс для любого рабочего
+    public class Worker
+    {
+        //Профессия
+        public Positions Position { get; set; } 
+
+        //Зп
+        public decimal Salary { get; set; }
+
+        //Фиксированная ежемесячная премия
+        public decimal Bonus { get; set; }
+    }
+
+    //Класс менеджера
+    public class Manager : Worker
+    {
+        public decimal CalcSalary()
+        {
+            return Salary + Bonus;
+        }
+    }
+
+    //Класс техника
+    public class Technician : Worker
+    {
+        //Категория
+        public Categories Category { get; set; }
+        public decimal CalcSalary()
+        {
+            decimal temp = 0;
+            switch (Category)
+            {
+                case Categories.A:
+                    temp = Salary / 100 * 25;
+                    break;
+                case Categories.B:
+                    temp = Salary / 100 * 15;
+                    break;
+                case Categories.C:
+                    break;
+            }
+            return Salary + Bonus +  temp;
+        }
+    }
+
+
+    //Класс водителя
+    public class Driver : Worker
+    {
+        //Категория
+        public Categories Category { get; set; }
+        
+        //Количество отработанных часов
+        public decimal TimeWorked { get; set; }
+
+        public decimal CalcSalary()
+        {
+            decimal temp = 0;
+            switch (Category)
+            {
+                case Categories.A:
+                    temp =  Salary * TimeWorked / 100 * 25;
+                    break;
+                case Categories.B:
+                    temp = Salary * TimeWorked / 100 * 15;
+                    break;
+                case Categories.C:
+                    break;
+            }
+            return Salary * TimeWorked + Bonus + temp;
+        }
+    }
+
+    //Перечисление профессий
+    public enum Positions
+    {
+        Manager,
+        Technician,
+        Driver
+    }
+
+    //Перечисление категорий
+    public enum Categories
+    {
+        A,
+        B,
+        C
+    }
+}
+
+namespace Salary.Controllers
+{
+    public class HomeController : Controller
+    {
+        public ActionResult Index()
+        {
+            decimal summ = 0;
+            using (StreamReader r = new StreamReader(AppDomain.CurrentDomain.BaseDirectory + @"content\text.json"))
+            {
+                string json = r.ReadToEnd();
+                List<Driver> personals = JsonConvert.DeserializeObject<List<Driver>>(json);
+
+                ViewBag.json = json;
+
+                foreach (var person in personals)
+                {
+                    switch(person.Position)
+                    {
+                        case Positions.Manager:
+                            Manager man = new Manager { Bonus = person.Bonus, Salary = person.Salary };
+                            summ += man.CalcSalary();
+                            break;
+                        case Positions.Technician:
+                            Technician tech = new Technician { Bonus = person.Bonus, Salary = person.Salary, Category = person.Category };
+                            summ += tech.CalcSalary();
+                            break;
+                        case Positions.Driver:
+                            Driver drive = new Driver { Bonus = person.Bonus, Salary = person.Salary, Category =  person.Category, TimeWorked  = person.TimeWorked };
+                            summ += drive.CalcSalary();
+                            break;
+                    }
+                }
+            }
+
+            ViewBag.salary = summ;
+            return View();
+        }
+    }
+}
+[//text.json
+  {
+    "position": "manager",
+    "salary": "150000",
+    "bonus": "0"
+  },
+  {
+    "position": "technician",
+    "salary": "35000",
+    "bonus": "5000",
+    "category": "B"
+  },
+  {
+    "position": "driver",
+    "salary": "250",
+    "bonus": "10000",
+    "timeWorked": "80",
+    "category": "A"
+  }
+]
